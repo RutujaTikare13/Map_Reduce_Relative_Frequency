@@ -1,0 +1,171 @@
+Commands for Pseudo Distributed mode
+
+1. Create a fat jar file for all the .class files with the required dependencies. When creating the fat jar we specify the main java class.
+
+2. Create a directory on HDFS to store all project related files
+	
+	/usr/project
+
+3. Copy the 100KWikiText.txt file in the directory /usr/project
+
+	hdfs dfs -put 100KWikiText.txt /usr/project
+
+4. Command to run the program (Since we have specified our class as the main class when creating the jar we do not have to specify the class name in the command)
+
+   hadoop jar ./Documents/project/mapred.jar /usr/project/100KWikiText.txt /usr/project/output
+
+5. Copy the output from HDFS:
+
+   hdfs fs -cat output/final/part-r-00000 > top100.txt
+
+
+Commands for Fully distributed mode
+
+1. Launch an instance and install the following dependencies
+	
+	sudo apt-get update -y
+	sudo apt-get upgrade -y
+	sudo apt-get install openjdk-11-jdk-headless -y
+	wget http://apache.mirror.iphh.net/hadoop/common/hadoop-3.1.2/hadoop-3.1.2.tar.gz
+	sudo tar zxvf hadoop-* -C /usr/local
+	sudo mv /usr/local/hadoop-* /usr/local/hadoop​
+
+2. Add the following environment variables.
+	
+	$vim ~/.bashrc​
+
+	# Insert the following lines in bashrc file
+	export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+	export PATH=$PATH:$JAVA_HOME/bin
+
+	export HADOOP_HOME=/usr/local/hadoop
+	export PATH=$PATH:$HADOOP_HOME/bin
+	export HADOOP_CONF_DIR=/usr/local/hadoop/etc/hadoop​
+
+	Update the current session with new environment variable.
+	$source ~/.bashrc
+
+	# Check if you can see the new variables.
+	$env
+
+3. Update /etc/hosts for master AND slaves for example:
+	
+	192.168.0.1    master
+	192.168.0.2    slave
+
+4. For Passphrase less ssh to localhost, execute following commands
+
+	$ssh-keygen -f ~/.ssh/id_rsa -t rsa -P ""
+	$cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys​
+
+
+5. Copy the public key of master (id_rsa.pub) to the ~/.ssh/authorized_keys file of datanode instances and then try to access the datanodes from namenode instance using ssh.
+
+
+6. Configuration of Hadoop Cluster
+	
+	Insert the following in core-site.xml file:
+
+		<configuration>
+  			<property>
+    			<name>fs.defaultFS</name>
+    			<value>hdfs://<namenode public dns name>:9000</value>
+  			</property>
+		</configuration>
+
+7. Insert the following in the yarn-site.xml file.
+
+	<configuration>
+
+<!— Site specific YARN configuration properties -->
+
+  		<property>
+    		<name>yarn.nodemanager.aux-services</name>
+    		<value>mapreduce_shuffle</value>
+  		</property>
+  		<property>
+    		<name>yarn.resourcemanager.hostname</name>
+    		<value><namenode public dns name></value>
+  		</property>
+	</configuration>
+
+8. Insert the following in the mapred-site.xml.
+
+	<configuration>
+  		<property>
+    		<name>mapreduce.jobtracker.address</name>
+    		<value><namenode public dns name>:54311</value>
+  		</property>
+  		<property>
+    		<name>mapreduce.framework.name</name>
+    		<value>yarn</value>
+  		</property>
+	</configuration>
+
+9. a. Add the following to $HADOOP_CONF_DIR/hdfs-site.xml file.
+
+		<configuration>
+  			<property>
+    			<name>dfs.replication</name>
+    			<value>3</value>
+  			</property>
+  			<property>
+    			<name>dfs.datanode.data.dir</name>
+    			<value>file:///usr/local/hadoop/data/hdfs/datanode</value>
+  			</property>
+		</configuration>
+
+10. Settings in namenode instance:
+
+a. Create a file called masters in HADOOP_CONF_DIR.
+	
+	<namenode_hostname>
+
+b. Edit and add to the file called slaves in HADOOP_CONF_DIR. This file will contain the hostnames of datanodes
+
+	<datanode1_hostname>
+	<datanode2_hostname>
+
+11. Settings in all nodes:
+
+	b. Run the following steps as it was done for namenode instance
+
+		sudo mkdir -p $HADOOP_HOME/data/hdfs/datanode
+		sudo chown -R ubuntu $HADOOP_HOME​
+
+11. Initiating the Hadoop cluster
+	
+	a.Go to namenode and run the following
+
+		hdfs namenode -format
+		$HADOOP_HOME/sbin/start-dfs.sh​
+
+	b. Initiate YARN
+
+		$HADOOP_HOME/sbin/start-yarn.sh​
+
+	c. Verify that the services are running using the command
+
+		$jps​
+
+12. Run the jar on the aws.
+	
+	a.Copy the 100KWikiText.txt file in the directory /usr/project
+
+		hdfs dfs -put 100KWikiText.txt /usr/project
+
+	b.Command to run the program
+
+   		hadoop jar ./Documents/project/mapred.jar /usr/project/100KWikiText.txt /usr/project/output
+
+References:
+
+1. Professor's notes
+
+2. https://www.michael-noll.com/tutorials/running-hadoop-on-ubuntu-linux-multi-node-cluster/
+
+3. https://medium.com/@jeevananandanne/setup-4-node-hadoop-cluster-on-aws-ec2-instances-1c1eeb4453bd
+
+4. Multiple stackoverflow articles 
+
+

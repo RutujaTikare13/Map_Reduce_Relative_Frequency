@@ -1,0 +1,48 @@
+Input Output format in each hadoop task
+
+1. Mapper1: 
+
+	Input: 	key -- LongWritable  		value -- Text
+
+	Output: key -- WordPair   		value -- IntWritable
+
+
+2. Reducer1:
+	
+	Input: 	key -- WordPair  		value -- IntWritable(Iterable)
+
+	Output: key -- WordPair   		value -- FloatWritable
+
+
+3. Mapper2:
+
+	Input: 	key -- Text  			value -- Text
+
+	Output: key -- Text   			value -- Text
+
+
+4. Reducer2:
+	
+	Input: 	key -- Text  			value -- Text(Iterable)
+
+	Output: key -- WordPair   		value -- FloatWritable
+
+
+Hadoop Cluster Settings:
+
+1. Pseudo-Distributed Mode:
+
+	1.1 VM type: Linux(MAC terminal), 8GB RAM
+
+	1.2 Execution time: 23 minutes
+
+
+2. Fully Distributed Mode:
+
+	2.1 Number of VM's : 2 (1 Namenode + 2 Datanode)
+
+	2.2 VM type: Ubuntu, t2 microtier, 4GB RAM
+
+	2.3 Execution time: 23 minutes
+
+

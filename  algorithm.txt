@@ -1,0 +1,20 @@
+Workflow of the algorithm:
+
+Word Pair: A WordPair consists of 2 words(wordOne and wordTwo). We use WordPair to hold information about neighboring words. We have overridden the definition of compareTo so that word pairs with wordTwo as "*" get the least priority and other words are sorted alphabetically.
+
+Word Partitioner: We have added a custom word partitioner to group words by wordOne so that all words with the same wordOne are sent to a single reducer.
+
+The algorithm has 2 MR jobs that are managed by the job controller. 
+
+1. Mapper 1(TokenizerMapper): In this first mapper, we tokenize the line we received from the input file into words and process them. We start by sanitizing each word by removing any punctuations and only consider those words that are in English([A-Z a-z]+). Based on the position of the current word 3 possibilities exist:
+	a) If the current word is the first word in the line then we create a word pair {current word, *} and write it to context with a value 1, indicating that it has one neighbor. We mark the current word as "previous".
+	b) If the current word is the last word in the line then we create a word pair {current word, *} and write it to context with value 1, indicating that the current word has one neighbor. Next we create 2 word pairs {current word, previous} and {previous, current word}. If the word pair has not already been encountered we write it to context with value 1, indicating that the pair has occurred once in the current line. We add both these word pairs to a Set so that only one such pair is considered per line. We update the current word to previous.
+	c) If word appears anywhere else we create a word pair {current word, *} and write it to context with value 2, indicating the word has 2 neighbors and. Next we create 2 word pair {current word, previous} and {previous, current word}. If the word pair has not already been encountered we write it to context with value 1, indicating that the pair has occurred once in the current line. We add both these word pairs to a Set so that only one such pair is considered per line. We update the current word to previous.
+
+2. Reducer 1(IntSumReducer): The Paritioner has been designed so that wordPairs with same wordOne end up at one reducer and also compare to has been overridden so that all word pairs with wordTwo as * are top of reducer input. First we aggregate all the values, let's call this aggregate as count. When the reducer finds a word pair with wordTwo as "*" we increment the global variable individualWordCount by count. Else we calculate the relative frequency as:( count /  individualWordCount). We write the word pair and the calculated relative frequency to the context.
+
+
+3. Mapper 2(FrequencyCalculatorMapper): The mapper2 takes text as key value pairs. We create a new Text as: wordOne:::wordTwo###relative_frequency. We will use a universal key which is a string "RESULT". We will write the universal key and concatenated text to context.
+
+4. Reducer 2: The reducer2 takes text as both key and value pair from the mapper1. The value is split by ### to get the relative frequency. We further split by ::: to get the individual words and create a word pair from it. We create a RelativeFrequencyEntry from the word pair and relative frequency. We add this to a tree set, the tree set sorts the entries by relative frequency in descending order. We extract the top 100 entries from treemap and write it to context which is written as the output file.
+
